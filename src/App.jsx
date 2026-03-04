@@ -709,10 +709,12 @@ RESPONSE RULES:
             }}>
               {m.role === "assistant" ? (
                 <div>
-                  <div style={{ fontSize: 10, color: TEAL, marginBottom: 5, textTransform: "uppercase", letterSpacing: 1.5, display: "flex", alignItems: "center" }}>
+                  <div style={{ fontSize: 10, color: TEAL, marginBottom: 5, textTransform: "uppercase", letterSpacing: 1.5, display: "flex", alignItems: "center", direction: "ltr" }}>
                     <Pulse /> Powered by Claude <img src={CLAUDE_LOGO} alt="" style={{ height: 12, objectFit: "contain", marginLeft: 4 }} />
                   </div>
-                  {formatMd(m.content)}
+                  <div style={{ direction: "rtl", textAlign: "right", unicodeBidi: "plaintext" }}>
+                    {formatMd(m.content)}
+                  </div>
                 </div>
               ) : m.content}
             </div>
