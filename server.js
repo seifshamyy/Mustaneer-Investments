@@ -5,14 +5,8 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import YahooFinance from "yahoo-finance2";
 
-const yahooFinance = new YahooFinance({
-    queue: { concurrency: 2, intervalCap: 1, interval: 200 },
-});
-
-// Suppress validation errors that crash on cloud servers
-yahooFinance.setGlobalConfig({
-    validation: { logErrors: false },
-});
+const yahooFinance = new YahooFinance();
+yahooFinance.setGlobalConfig({ validation: { logErrors: false } });
 
 dotenv.config();
 
