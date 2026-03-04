@@ -6,7 +6,6 @@ import { dirname, join } from "path";
 import YahooFinance from "yahoo-finance2";
 
 const yahooFinance = new YahooFinance();
-yahooFinance.setGlobalConfig({ validation: { logErrors: false } });
 
 dotenv.config();
 
