@@ -388,13 +388,13 @@ RESPONSE RULES:
   const renderPortfolio = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Live data status bar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px", background: `${dataLoading ? TEAL : GREEN}08`, border: `1px solid ${dataLoading ? TEAL : GREEN}20`, borderRadius: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: isMobile ? "6px 10px" : "8px 14px", background: `${dataLoading ? TEAL : GREEN}08`, border: `1px solid ${dataLoading ? TEAL : GREEN}20`, borderRadius: 8, flexWrap: "wrap", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: dataLoading ? TEAL_LIGHT : GREEN }}>
           <Pulse color={dataLoading ? TEAL_LIGHT : GREEN} />
-          {dataLoading ? "Fetching live market data..." : `Live prices · ${Object.keys(liveQuotes).length} tickers loaded`}
+          {dataLoading ? "Fetching live data..." : `Live · ${Object.keys(liveQuotes).length} tickers`}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {lastRefresh && <span style={{ fontSize: 10, color: TEXT_DIM }}>Updated {lastRefresh.toLocaleTimeString()}</span>}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {lastRefresh && !isMobile && <span style={{ fontSize: 10, color: TEXT_DIM }}>Updated {lastRefresh.toLocaleTimeString()}</span>}
           <button onClick={refreshAllData} disabled={dataLoading} style={btn(`${TEAL}18`, TEAL_LIGHT, { padding: "4px 12px", fontSize: 10, opacity: dataLoading ? 0.4 : 1 })}>
             {"\u21BB"} Refresh
           </button>
@@ -402,18 +402,18 @@ RESPONSE RULES:
       </div>
 
       <Card glow>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", marginBottom: 16, flexWrap: "wrap", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>Portfolio Holdings</div>
-            <div style={{ fontSize: 12, color: TEXT_DIM, marginTop: 2 }}>
-              {portfolio.length} positions {"\u00B7"} Market value: {fmtC(totalMarketValue)} {"\u00B7"} P&L: <span style={{ color: totalPnL >= 0 ? GREEN : RED }}>{totalPnL >= 0 ? "+" : ""}{fmtC(totalPnL)}</span> {"\u00B7"} <span style={{ color: TEAL_LIGHT, fontSize: 10 }}>{currency}</span>
+            <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: TEXT }}>Portfolio Holdings</div>
+            <div style={{ fontSize: isMobile ? 11 : 12, color: TEXT_DIM, marginTop: 2 }}>
+              {portfolio.length} positions {"\u00B7"} {fmtC(totalMarketValue)} {"\u00B7"} <span style={{ color: totalPnL >= 0 ? GREEN : RED }}>{totalPnL >= 0 ? "+" : ""}{fmtC(totalPnL)}</span>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={exportCSV} style={btn(`${TEAL}20`, TEAL_LIGHT)}>{"\u2913"} Export CSV</button>
-            <button onClick={() => setPortfolio(DEFAULT_PORTFOLIO)} style={btn(`${TEAL}20`, TEAL_LIGHT)}>Load Sample</button>
-            <button onClick={() => setPortfolio([])} style={btn(`${RED}15`, RED)}>Clear All</button>
-            <button onClick={() => setActiveTab("dashboard")} style={btn(TEAL, BG)}>View Dashboard {"\u2192"}</button>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button onClick={exportCSV} style={btn(`${TEAL}20`, TEAL_LIGHT, { padding: isMobile ? "6px 10px" : undefined, fontSize: isMobile ? 10 : 11 })}>{"\u2913"} Export</button>
+            <button onClick={() => setPortfolio(DEFAULT_PORTFOLIO)} style={btn(`${TEAL}20`, TEAL_LIGHT, { padding: isMobile ? "6px 10px" : undefined, fontSize: isMobile ? 10 : 11 })}>Sample</button>
+            <button onClick={() => setPortfolio([])} style={btn(`${RED}15`, RED, { padding: isMobile ? "6px 10px" : undefined, fontSize: isMobile ? 10 : 11 })}>Clear</button>
+            {!isMobile && <button onClick={() => setActiveTab("dashboard")} style={btn(TEAL, BG)}>View Dashboard {"\u2192"}</button>}
           </div>
         </div>
 
@@ -446,6 +446,32 @@ RESPONSE RULES:
             </div>
             <div style={{ fontSize: 14, marginBottom: 4 }}>No holdings yet</div>
             <div style={{ fontSize: 12 }}>Add positions above or load sample data</div>
+          </div>
+        ) : isMobile ? (
+          /* ─── MOBILE CARD LAYOUT ─── */
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {holdingsData.map((h, i) => (
+              <div key={i} style={{ background: `${BG2}80`, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div>
+                    <span style={{ fontWeight: 700, color: TEXT, fontSize: 15 }}>{h.ticker}</span>
+                    <span style={{ fontSize: 10, color: TEXT_DIM, marginLeft: 6 }}>{h.shares} shares</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => startEdit(i)} style={btn(`${TEAL}18`, TEAL_LIGHT, { padding: "3px 8px", fontSize: 10 })}>Edit</button>
+                    <button onClick={() => removeHolding(i)} style={btn(`${RED}15`, RED, { padding: "3px 8px", fontSize: 10 })}>{"\u00D7"}</button>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px", fontSize: 12 }}>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>Price </span><span style={{ color: TEXT, fontWeight: 500 }}>{fmtP(h.price)}</span></div>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>Change </span><span style={{ color: h.changePercent >= 0 ? GREEN : RED }}>{h.changePercent >= 0 ? "+" : ""}{h.changePercent.toFixed(2)}%</span></div>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>Value </span><span style={{ color: TEXT }}>{fmtC(h.marketValue)}</span></div>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>P&L </span><span style={{ color: h.pnl >= 0 ? GREEN : RED, fontWeight: 600 }}>{h.pnl >= 0 ? "+" : ""}{fmtC(h.pnl)} <span style={{ fontSize: 10, opacity: 0.8 }}>({h.pnlPercent.toFixed(1)}%)</span></span></div>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>Cost </span><span style={{ color: TEXT_SEC }}>{fmtP(h.avgCost)}</span></div>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>Weight </span><span style={{ color: TEXT_SEC }}>{(h.marketValue / totalMarketValue * 100).toFixed(1)}%</span></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div style={{ overflowX: "auto", margin: "0 -18px", padding: "0 18px" }}>
@@ -628,47 +654,69 @@ RESPONSE RULES:
 
       <Card>
         <SectionLabel>Holdings Overview — Live Data</SectionLabel>
-        <div style={{ overflowX: "auto", margin: "0 -18px", padding: "0 18px" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 700 }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                {["Ticker", "Price", "Day Change", "Market Value", "P&L", "Weight", "30D Trend"].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "7px 8px", color: TEXT_DIM, fontSize: 10, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: 500 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {holdingsData.map((h, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${BORDER}12` }}>
-                  <td style={{ padding: "8px 8px" }}>
-                    <div style={{ fontWeight: 600, color: TEXT }}>{h.ticker}</div>
-                    <div style={{ fontSize: 10, color: TEXT_DIM }}>{h.shares} shares</div>
-                  </td>
-                  <td style={{ padding: "8px 8px", color: TEXT, fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{fmtP(h.price)}</td>
-                  <td style={{ padding: "8px 8px", color: h.changePercent >= 0 ? GREEN : RED, fontVariantNumeric: "tabular-nums" }}>{h.changePercent >= 0 ? "+" : ""}{h.changePercent.toFixed(2)}%</td>
-                  <td style={{ padding: "8px 8px", color: TEXT, fontVariantNumeric: "tabular-nums" }}>{fmtC(h.marketValue)}</td>
-                  <td style={{ padding: "8px 8px", fontVariantNumeric: "tabular-nums" }}>
-                    <span style={{ color: h.pnl >= 0 ? GREEN : RED }}>{h.pnl >= 0 ? "+" : ""}{fmtC(h.pnl)}</span>
-                    <span style={{ fontSize: 10, color: h.pnlPercent >= 0 ? GREEN : RED, marginLeft: 4 }}>({h.pnlPercent.toFixed(1)}%)</span>
-                  </td>
-                  <td style={{ padding: "8px 8px", color: TEXT_DIM, fontVariantNumeric: "tabular-nums" }}>{(h.marketValue / totalMarketValue * 100).toFixed(1)}%</td>
-                  <td style={{ padding: "8px 8px", width: 72 }}>
-                    {h.sparkline.length > 1 ? (
-                      <svg width="68" height="20" viewBox="0 0 68 20">
-                        <polyline fill="none" stroke={h.pnl >= 0 ? GREEN : RED} strokeWidth="1.3"
-                          points={h.sparkline.map((p, j) => {
-                            const ys = h.sparkline.map(s => s.y);
-                            const mn = Math.min(...ys), mx = Math.max(...ys);
-                            return `${(j / (h.sparkline.length - 1)) * 66 + 1},${18 - ((p.y - mn) / (mx - mn || 1)) * 16 - 1}`;
-                          }).join(" ")} />
-                      </svg>
-                    ) : <span style={{ color: TEXT_DIM, fontSize: 10 }}>—</span>}
-                  </td>
+        {isMobile ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {holdingsData.map((h, i) => (
+              <div key={i} style={{ background: `${BG2}80`, borderRadius: 8, padding: "10px 12px", border: `1px solid ${BORDER}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <div>
+                    <span style={{ fontWeight: 700, color: TEXT, fontSize: 14 }}>{h.ticker}</span>
+                    <span style={{ fontSize: 10, color: TEXT_DIM, marginLeft: 6 }}>{h.shares} shares</span>
+                  </div>
+                  <span style={{ color: h.changePercent >= 0 ? GREEN : RED, fontSize: 12, fontWeight: 600 }}>{h.changePercent >= 0 ? "+" : ""}{h.changePercent.toFixed(2)}%</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", fontSize: 12 }}>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>Price </span><span style={{ color: TEXT }}>{fmtP(h.price)}</span></div>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>Value </span><span style={{ color: TEXT }}>{fmtC(h.marketValue)}</span></div>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>P&L </span><span style={{ color: h.pnl >= 0 ? GREEN : RED }}>{h.pnl >= 0 ? "+" : ""}{fmtC(h.pnl)} ({h.pnlPercent.toFixed(1)}%)</span></div>
+                  <div><span style={{ color: TEXT_DIM, fontSize: 10 }}>Weight </span><span style={{ color: TEXT_SEC }}>{(h.marketValue / totalMarketValue * 100).toFixed(1)}%</span></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto", margin: "0 -18px", padding: "0 18px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 700 }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                  {["Ticker", "Price", "Day Change", "Market Value", "P&L", "Weight", "30D Trend"].map(h => (
+                    <th key={h} style={{ textAlign: "left", padding: "7px 8px", color: TEXT_DIM, fontSize: 10, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: 500 }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {holdingsData.map((h, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${BORDER}12` }}>
+                    <td style={{ padding: "8px 8px" }}>
+                      <div style={{ fontWeight: 600, color: TEXT }}>{h.ticker}</div>
+                      <div style={{ fontSize: 10, color: TEXT_DIM }}>{h.shares} shares</div>
+                    </td>
+                    <td style={{ padding: "8px 8px", color: TEXT, fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{fmtP(h.price)}</td>
+                    <td style={{ padding: "8px 8px", color: h.changePercent >= 0 ? GREEN : RED, fontVariantNumeric: "tabular-nums" }}>{h.changePercent >= 0 ? "+" : ""}{h.changePercent.toFixed(2)}%</td>
+                    <td style={{ padding: "8px 8px", color: TEXT, fontVariantNumeric: "tabular-nums" }}>{fmtC(h.marketValue)}</td>
+                    <td style={{ padding: "8px 8px", fontVariantNumeric: "tabular-nums" }}>
+                      <span style={{ color: h.pnl >= 0 ? GREEN : RED }}>{h.pnl >= 0 ? "+" : ""}{fmtC(h.pnl)}</span>
+                      <span style={{ fontSize: 10, color: h.pnlPercent >= 0 ? GREEN : RED, marginLeft: 4 }}>({h.pnlPercent.toFixed(1)}%)</span>
+                    </td>
+                    <td style={{ padding: "8px 8px", color: TEXT_DIM, fontVariantNumeric: "tabular-nums" }}>{(h.marketValue / totalMarketValue * 100).toFixed(1)}%</td>
+                    <td style={{ padding: "8px 8px", width: 72 }}>
+                      {h.sparkline.length > 1 ? (
+                        <svg width="68" height="20" viewBox="0 0 68 20">
+                          <polyline fill="none" stroke={h.pnl >= 0 ? GREEN : RED} strokeWidth="1.3"
+                            points={h.sparkline.map((p, j) => {
+                              const ys = h.sparkline.map(s => s.y);
+                              const mn = Math.min(...ys), mx = Math.max(...ys);
+                              return `${(j / (h.sparkline.length - 1)) * 66 + 1},${18 - ((p.y - mn) / (mx - mn || 1)) * 16 - 1}`;
+                            }).join(" ")} />
+                        </svg>
+                      ) : <span style={{ color: TEXT_DIM, fontSize: 10 }}>—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );
