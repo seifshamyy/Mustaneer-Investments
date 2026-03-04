@@ -197,7 +197,7 @@ app.post("/api/chat", async (req, res) => {
 });
 
 // ─── SPA fallback: serve index.html for non-API routes ───
-app.get("*", (req, res) => {
+app.get("/{*splat}", (req, res) => {
     res.sendFile(join(__dirname, "dist", "index.html"));
 });
 
