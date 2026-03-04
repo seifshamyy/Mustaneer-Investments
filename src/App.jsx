@@ -723,7 +723,7 @@ RESPONSE RULES:
 
   // ─── AGENT TAB ───
   const renderAgent = () => (
-    <div style={{ display: "flex", flexDirection: "column", height: isMobile ? "calc(100vh - 180px)" : "calc(100vh - 130px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: isMobile ? "calc(100vh - 120px)" : "calc(100vh - 130px)" }}>
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 0" }}>
         {messages.length === 0 && (
           <div style={{ textAlign: "center", padding: isMobile ? "30px 12px" : "50px 16px" }}>
@@ -794,8 +794,8 @@ RESPONSE RULES:
           <input
             value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && !loading && sendMessage()}
-            placeholder="Ask about your portfolio, market conditions, risk..."
-            style={inp({ flex: 1, borderRadius: 10, padding: "11px 14px" })}
+            placeholder={isMobile ? "Ask anything..." : "Ask about your portfolio, market conditions, risk..."}
+            style={inp({ flex: 1, borderRadius: 10, padding: isMobile ? "10px 12px" : "11px 14px", fontSize: 16 })}
             onFocus={e => e.target.style.borderColor = TEAL}
             onBlur={e => e.target.style.borderColor = BORDER}
             disabled={loading}
