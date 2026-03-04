@@ -723,7 +723,7 @@ RESPONSE RULES:
 
   // ─── AGENT TAB ───
   const renderAgent = () => (
-    <div style={{ display: "flex", flexDirection: "column", height: isMobile ? "calc(100vh - 120px)" : "calc(100vh - 130px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100dvh - 110px)", overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 0" }}>
         {messages.length === 0 && (
           <div style={{ textAlign: "center", padding: isMobile ? "30px 12px" : "50px 16px" }}>
@@ -784,7 +784,7 @@ RESPONSE RULES:
         <div ref={chatEndRef} />
       </div>
 
-      <div style={{ padding: "10px 0", borderTop: `1px solid ${BORDER}` }}>
+      <div style={{ padding: "8px 0 0", borderTop: `1px solid ${BORDER}`, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 8 }}>
           {messages.length > 0 && (
             <button onClick={() => setMessages([])} style={btn(`${RED}15`, RED, { borderRadius: 10, padding: "11px 14px", fontSize: 11 })} title="New Chat">
@@ -830,7 +830,7 @@ RESPONSE RULES:
     ];
 
   return (
-    <div style={{ background: BG, minHeight: "100vh", color: TEXT, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", opacity: animateIn ? 1 : 0, transition: "opacity 0.6s ease" }}>
+    <div style={{ background: BG, minHeight: "100vh", height: activeTab === "agent" ? "100dvh" : undefined, overflow: activeTab === "agent" ? "hidden" : undefined, color: TEXT, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", opacity: animateIn ? 1 : 0, transition: "opacity 0.6s ease", display: "flex", flexDirection: "column" }}>
       <style>{`
         @keyframes mPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
         @keyframes mFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -910,7 +910,7 @@ RESPONSE RULES:
       <Toast toasts={toasts} onDismiss={dismissToast} t={t} />
 
       {/* Content */}
-      <main style={{ padding: "16px 16px 40px", maxWidth: 1100, margin: "0 auto", animation: "mFadeIn 0.5s ease" }}>
+      <main style={{ padding: activeTab === "agent" ? "8px 16px 0" : "16px 16px 40px", maxWidth: 1100, margin: "0 auto", animation: "mFadeIn 0.5s ease", overflow: activeTab === "agent" ? "hidden" : undefined, flex: activeTab === "agent" ? 1 : undefined, display: activeTab === "agent" ? "flex" : undefined, flexDirection: activeTab === "agent" ? "column" : undefined, width: "100%", boxSizing: "border-box" }}>
         {activeTab === "portfolio" && renderPortfolio()}
         {activeTab === "dashboard" && renderDashboard()}
         {activeTab === "agent" && renderAgent()}
