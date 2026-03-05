@@ -21,18 +21,22 @@ app.use(express.json({ limit: "2mb" }));
 // ─── Serve Vite production build if exists ───
 app.use(express.static(join(__dirname, "dist")));
 
-// ─── Cache to avoid hammering Yahoo ───
+// ─── Cache to avoid hammering APIs ───
 const quoteCache = new Map();
 const CACHE_TTL = 30_000; // 30 seconds
+const FX_CACHE_TTL = 300_000; // 5 minutes for exchange rate
 
-function getCached(key) {
+function getCached(key, ttl = CACHE_TTL) {
     const entry = quoteCache.get(key);
-    if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+    if (entry && Date.now() - entry.ts < ttl) return entry.data;
     return null;
 }
 function setCache(key, data) {
     quoteCache.set(key, { data, ts: Date.now() });
 }
+
+// ─── Helper: fetch live USD/EGP rate ───
+// Removed as per user request
 
 // ─── Retry helper for Yahoo (cloud IPs get rate-limited) ───
 async function withRetry(fn, retries = 3, delay = 1000) {
@@ -128,19 +132,19 @@ app.get("/api/history", async (req, res) => {
     }
 });
 
-// ─── GET /api/indices — live market indices ───
+// ─── GET /api/indices — live market indices (US + Egyptian) ───
 app.get("/api/indices", async (req, res) => {
     try {
         const cached = getCached("indices");
         if (cached) return res.json(cached);
 
-        const indexSymbols = ["^GSPC", "^IXIC", "^DJI", "^VIX", "^TNX", "GC=F"];
+        const indexSymbols = ["^EGX30", "^GSPC", "^IXIC", "^DJI", "^VIX", "^TNX", "GC=F"];
         const results = await Promise.allSettled(
             indexSymbols.map(sym => withRetry(() => yahooFinance.quote(sym)))
         );
 
         const nameMap = {
-            "^GSPC": "SPX", "^IXIC": "NDX", "^DJI": "DJI",
+            "^EGX30": "EGX30", "^GSPC": "SPX", "^IXIC": "NDX", "^DJI": "DJI",
             "^VIX": "VIX", "^TNX": "US10Y", "GC=F": "GOLD"
         };
 
@@ -161,6 +165,98 @@ app.get("/api/indices", async (req, res) => {
     } catch (err) {
         console.error("Indices error:", err.message);
         res.status(500).json({ error: "Failed to fetch indices" });
+    }
+});
+
+// ─── GET /api/gold-egypt — gold prices in EGP (24K/21K/18K per gram) ───
+app.get("/api/gold-egypt", async (req, res) => {
+    try {
+        const cached = getCached("gold_egypt");
+        if (cached) return res.json(cached);
+
+        // Fetch global gold & silver from Yahoo (USD per troy ounce)
+        const [goldResult, silverResult] = await Promise.allSettled([
+            withRetry(() => yahooFinance.quote("GC=F")),
+            withRetry(() => yahooFinance.quote("SI=F")),
+        ]);
+
+        const goldUsdOz = goldResult.status === "fulfilled" ? (goldResult.value?.regularMarketPrice ?? 0) : 0;
+        const silverUsdOz = silverResult.status === "fulfilled" ? (silverResult.value?.regularMarketPrice ?? 0) : 0;
+        const goldChange = goldResult.status === "fulfilled" ? (goldResult.value?.regularMarketChangePercent ?? 0) : 0;
+        const silverChange = silverResult.status === "fulfilled" ? (silverResult.value?.regularMarketChangePercent ?? 0) : 0;
+
+        const egpRate = await getEgpRate();
+
+        // 1 troy ounce = 31.1035 grams
+        const goldEgpPerGram24 = (goldUsdOz * egpRate) / 31.1035;
+        const goldEgpPerGram21 = goldEgpPerGram24 * (21 / 24);
+        const goldEgpPerGram18 = goldEgpPerGram24 * (18 / 24);
+        const silverEgpPerGram = (silverUsdOz * egpRate) / 31.1035;
+
+        const data = {
+            gold: {
+                usdPerOz: goldUsdOz,
+                egpRate,
+                change: goldChange,
+                karats: {
+                    "24K": { perGram: Math.round(goldEgpPerGram24 * 100) / 100, label: "عيار 24" },
+                    "21K": { perGram: Math.round(goldEgpPerGram21 * 100) / 100, label: "عيار 21" },
+                    "18K": { perGram: Math.round(goldEgpPerGram18 * 100) / 100, label: "عيار 18" },
+                },
+            },
+            silver: {
+                usdPerOz: silverUsdOz,
+                egpPerGram: Math.round(silverEgpPerGram * 100) / 100,
+                change: silverChange,
+                label: "فضة",
+            },
+            ts: Date.now(),
+        };
+
+        setCache("gold_egypt", data);
+        res.json(data);
+    } catch (err) {
+        console.error("Gold Egypt error:", err.message);
+        res.status(500).json({ error: "Failed to fetch gold prices" });
+    }
+});
+
+// ─── GET /api/commodities — key commodities with EGP conversion ───
+app.get("/api/commodities", async (req, res) => {
+    try {
+        const cached = getCached("commodities");
+        if (cached) return res.json(cached);
+
+        const comSymbols = ["CL=F", "NG=F", "SI=F", "HG=F"];
+        const nameMap = { "CL=F": "النفط (برنت)", "NG=F": "الغاز الطبيعي", "SI=F": "الفضة", "HG=F": "النحاس" };
+        const unitMap = { "CL=F": "برميل", "NG=F": "MMBtu", "SI=F": "أوقية", "HG=F": "رطل" };
+
+        const results = await Promise.allSettled(
+            comSymbols.map(sym => withRetry(() => yahooFinance.quote(sym)))
+        );
+        const egpRate = await getEgpRate();
+
+        const commodities = results.map((r, i) => {
+            if (r.status === "fulfilled" && r.value) {
+                const q = r.value;
+                return {
+                    symbol: comSymbols[i],
+                    name: nameMap[comSymbols[i]],
+                    unit: unitMap[comSymbols[i]],
+                    priceUsd: q.regularMarketPrice ?? 0,
+                    priceEgp: Math.round((q.regularMarketPrice ?? 0) * egpRate * 100) / 100,
+                    change: q.regularMarketChangePercent ?? 0,
+                };
+            }
+            return { symbol: comSymbols[i], name: nameMap[comSymbols[i]], unit: unitMap[comSymbols[i]], priceUsd: 0, priceEgp: 0, change: 0 };
+        });
+
+        const data = { commodities, egpRate, ts: Date.now() };
+        setCache("commodities", data);
+        res.json(data);
+    } catch (err) {
+        console.error("Commodities error:", err.message);
+        res.status(500).json({ error: "Failed to fetch commodities" });
     }
 });
 
